@@ -71,3 +71,6 @@ val ClassStub.explicitPrimaryConstructor: ConstructorStub?
 
 fun ClassStub.nestedName(): String =
         classifier.relativeFqName.substringAfterLast('.')
+
+val ClassStub.isEnumVarClass: Boolean
+        get() = origin.let { it is StubOrigin.VarOf && it.typeOrigin is StubOrigin.Enum }

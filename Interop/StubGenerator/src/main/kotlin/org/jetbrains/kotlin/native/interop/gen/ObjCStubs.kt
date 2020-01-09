@@ -81,14 +81,14 @@ private fun ObjCMethod.getKotlinParameters(
         val kotlinType = stubIrBuilder.mirror(it.type).argType
         val name = names[index]
         val annotations = if (it.nsConsumed) listOf(AnnotationStub.ObjC.Consumed) else emptyList()
-        FunctionParameterStub(name, kotlinType.toStubIrType(), isVararg = false, annotations = annotations)
+        FunctionParameterStub(name, kotlinType.toStubIrType(), annotations = annotations, isVararg = false)
     }
     if (this.isVariadic) {
         result += FunctionParameterStub(
                 names.last(),
                 KotlinTypes.any.makeNullable().toStubIrType(),
-                isVararg = true,
-                annotations = emptyList()
+                annotations = emptyList(),
+                isVararg = true
         )
     }
     return result

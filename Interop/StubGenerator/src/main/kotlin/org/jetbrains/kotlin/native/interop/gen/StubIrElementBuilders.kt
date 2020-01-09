@@ -73,7 +73,7 @@ internal class StructStubBuilder(
                 val offset = field.offset / 8
                 val fieldRefType = context.mirror(field.type)
                 val unwrappedFieldType = field.type.unwrapTypedefs()
-                val origin = StubOrigin.Synthetic
+                val origin = StubOrigin.StructMember(field)
                 if (unwrappedFieldType is ArrayType) {
                     val type = (fieldRefType as TypeMirror.ByValue).valueType
                     val annotations = if (platform == KotlinPlatform.JVM) {
@@ -115,7 +115,7 @@ internal class StructStubBuilder(
             context.bridgeComponentsBuilder.getterToBridgeInfo[readBits] = BridgeGenerationInfo("", typeInfo)
             context.bridgeComponentsBuilder.setterToBridgeInfo[writeBits] = BridgeGenerationInfo("", typeInfo)
             val kind = PropertyStub.Kind.Var(readBits, writeBits)
-            PropertyStub(field.name, kotlinType.toStubIrType(), kind, origin = StubOrigin.Synthetic)
+            PropertyStub(field.name, kotlinType.toStubIrType(), kind, origin = StubOrigin.StructMember(field))
         }
 
         val superClass = context.platform.getRuntimeType("CStructVar")
@@ -201,14 +201,14 @@ internal class EnumStubBuilder(
         private val enumDef: EnumDef
 ) : StubElementBuilder {
 
-    val classifier = (context.mirror(EnumType(enumDef)) as TypeMirror.ByValue).valueType.classifier
+    private val classifier = (context.mirror(EnumType(enumDef)) as TypeMirror.ByValue).valueType.classifier
+    private val baseTypeMirror = context.mirror(enumDef.baseType)
+    private val baseType = baseTypeMirror.argType.toStubIrType()
 
     override fun build(): List<StubIrElement> {
         if (!context.isStrictEnum(enumDef)) {
             return generateEnumAsConstants(enumDef)
         }
-        val baseTypeMirror = context.mirror(enumDef.baseType)
-        val baseType = baseTypeMirror.argType.toStubIrType()
 
         val constructorParameter = FunctionParameterStub("value", baseType)
 
@@ -275,9 +275,8 @@ internal class EnumStubBuilder(
                 constructors = listOf(primaryConstructor),
                 properties = listOf(valueProperty),
                 origin = origin,
-                // TODO: Enums should inherit from Enum<T>
-                interfaces = listOf(context.platform.getRuntimeType("CEnum"))
-//                childrenClasses = listOf(enumVarClass)
+                interfaces = listOf(context.platform.getRuntimeType("CEnum")),
+                childrenClasses = listOf(enumVarClass)
         )
         context.bridgeComponentsBuilder.enumToTypeMirror[enum] = baseTypeMirror
         return listOf(enum)
@@ -288,21 +287,40 @@ internal class EnumStubBuilder(
         val rawPtrConstructorParam = FunctionParameterStub("rawPtr", context.platform.getRuntimeType("NativePtr"))
         val superClass = context.platform.getRuntimeType("CEnumVar")
         require(superClass is ClassifierStubType)
-        val origin = StubOrigin.Synthetic
         val primaryConstructor = ConstructorStub(
                 parameters = listOf(rawPtrConstructorParam),
                 isPrimary = true,
                 annotations = emptyList(),
-                origin = origin
+                origin = StubOrigin.SyntheticDefaultConstructor
         )
         val superClassInit = SuperClassInit(superClass, listOf(GetConstructorParameter(rawPtrConstructorParam)))
 
         val companionSuper = superClass.nested("Type")
-//        val typeSize = listOf(IntegralConstantStub(def.size, 4, true))
-//        val companionSuperInit = SuperClassInit(companionSuper, typeSize)
+        // Assuming base type is integer.
+        // TODO: Check is this assumption is really correct and make code more robust.
+        val baseIntegerTypeSize = when (val unwrappedType = enumDef.baseType.unwrapTypedefs()) {
+            is IntegerType -> unwrappedType.size.toLong()
+            CharType -> 1L
+            else -> error("Incorrect base type for enum")
+        }
+        val typeSize = listOf(IntegralConstantStub(baseIntegerTypeSize, 4, true))
+        val companionSuperInit = SuperClassInit(companionSuper, typeSize)
         val companionClassifier = classifier.nested("Companion")
-        val companion = ClassStub.Companion(companionClassifier, emptyList(), null)
-
+        val companion = ClassStub.Companion(
+                classifier = companionClassifier,
+                superClassInit = companionSuperInit
+        )
+        val valueProperty = PropertyStub(
+                name = "value",
+                type = ClassifierStubType(classifier),
+                kind = PropertyStub.Kind.Var(
+                        // TODO: Actually it's a hack which relies on the fact that
+                        //  we will skip CEnum.Var in text emitter.
+                        PropertyAccessor.Getter.SimpleGetter(),
+                        PropertyAccessor.Setter.SimpleSetter()
+                ),
+                origin = StubOrigin.SyntheticEnumVarValueField(enumDef)
+        )
 
         return ClassStub.Simple(
                 classifier = classifier.nested("Var"),
@@ -310,7 +328,8 @@ internal class EnumStubBuilder(
                 superClassInit = superClassInit,
                 companion = companion,
                 modality = ClassStubModality.NONE,
-                origin = StubOrigin.VarOf(StubOrigin.Enum(enumDef))
+                origin = StubOrigin.VarOf(StubOrigin.Enum(enumDef)),
+                properties = listOf(valueProperty)
         )
     }
 
@@ -377,7 +396,7 @@ internal class EnumStubBuilder(
                     kind,
                     MemberStubModality.FINAL,
                     null,
-                    origin = StubOrigin.Synthetic
+                    origin = StubOrigin.EnumEntry(constant)
             )
         }
         val container = SimpleStubContainer(
@@ -415,7 +434,7 @@ internal class FunctionStubBuilder(
                         KotlinPlatform.NATIVE -> listOf(AnnotationStub.CCall.CString)
                     }
                     val type = KotlinTypes.string.makeNullable().toStubIrType()
-                    val functionParameterStub = FunctionParameterStub(parameterName, type, annotations, origin = origin)
+                    val functionParameterStub = FunctionParameterStub(parameterName, type, annotations)
                     context.bridgeComponentsBuilder.cStringParameters += functionParameterStub
                     functionParameterStub
                 }
@@ -425,17 +444,17 @@ internal class FunctionStubBuilder(
                         KotlinPlatform.NATIVE -> listOf(AnnotationStub.CCall.WCString)
                     }
                     val type = KotlinTypes.string.makeNullable().toStubIrType()
-                    val functionParameterStub = FunctionParameterStub(parameterName, type, annotations, origin = origin)
+                    val functionParameterStub = FunctionParameterStub(parameterName, type, annotations)
                     context.bridgeComponentsBuilder.wCStringParameters += functionParameterStub
                     functionParameterStub
                 }
                 representAsValuesRef != null -> {
-                    FunctionParameterStub(parameterName, representAsValuesRef.toStubIrType(), origin = origin)
+                    FunctionParameterStub(parameterName, representAsValuesRef.toStubIrType())
                 }
                 else -> {
                     val mirror = context.mirror(parameter.type)
                     val type = mirror.argType.toStubIrType()
-                    FunctionParameterStub(parameterName, type, origin = origin)
+                    FunctionParameterStub(parameterName, type)
                 }
             }
         }

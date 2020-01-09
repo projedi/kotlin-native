@@ -162,6 +162,9 @@ class StubIrTextEmitter(
                     element.children
                             // We render a primary constructor as part of a header.
                             .filterNot { it is ConstructorStub && it.isPrimary }
+                            // Skip because it will be rendered separately later.
+                            // We do it because we don't encode properly accessors to CEnum.Var.value.
+                            .filterNot { it is ClassStub && it.isEnumVarClass }
                             .forEach {
                                 emitEmptyLine()
                                 it.accept(this, element)

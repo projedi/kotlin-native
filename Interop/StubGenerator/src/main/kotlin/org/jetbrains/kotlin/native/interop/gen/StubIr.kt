@@ -106,6 +106,8 @@ sealed class StubOrigin {
 
     class SyntheticEnumValueField(val enum: EnumDef) : StubOrigin()
 
+    class SyntheticEnumVarValueField(val enum: EnumDef) : StubOrigin()
+
     class ObjCCategoryInitMethod(
             val method: org.jetbrains.kotlin.native.interop.indexer.ObjCMethod
     ) : StubOrigin()
@@ -140,6 +142,10 @@ sealed class StubOrigin {
     class FunctionParameter(val parameter: Parameter) : StubOrigin()
 
     class Struct(val struct: StructDecl) : StubOrigin()
+
+    class StructMember(
+            val member: org.jetbrains.kotlin.native.interop.indexer.StructMember
+    ) : StubOrigin()
 
     class Constant(val constantDef: ConstantDef): StubOrigin()
 
@@ -336,8 +342,7 @@ class FunctionParameterStub(
         val name: String,
         val type: StubType,
         override val annotations: List<AnnotationStub> = emptyList(),
-        val isVararg: Boolean = false,
-        val origin: StubOrigin = StubOrigin.Synthetic
+        val isVararg: Boolean = false
 ) : AnnotationHolder
 
 enum class MemberStubModality {

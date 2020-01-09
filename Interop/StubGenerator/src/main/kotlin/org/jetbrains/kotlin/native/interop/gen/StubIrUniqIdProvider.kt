@@ -31,9 +31,11 @@ internal class StubIrUniqIdProvider(private val context: ManglingContext) {
             is StubOrigin.ObjCProperty -> property.origin.property.uniqueSymbolName
             is StubOrigin.Constant -> property.origin.constantDef.uniqueSymbolName
             is StubOrigin.Global -> property.origin.global.uniqueSymbolName
-            // TODO: What to do with origin for enum entries and struct fields?
+            // TODO: Incorrect for enum entry as global property.
             is StubOrigin.EnumEntry -> property.origin.constant.uniqSymbolName
             is StubOrigin.SyntheticEnumValueField -> "${property.origin.enum.uniqueSymbolName}#Value"
+            is StubOrigin.StructMember -> property.origin.member.name
+            is StubOrigin.SyntheticEnumVarValueField -> "${property.origin.enum.uniqueSymbolName}#Var"
             else -> error("Unexpected origin ${property.origin} for property ${property.name}.")
         }.toUniqId()
     }
