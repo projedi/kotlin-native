@@ -2,11 +2,10 @@
  * Copyright 2010-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license
  * that can be found in the LICENSE file.
  */
-package org.jetbrains.kotlin.backend.konan.ir
+package org.jetbrains.kotlin.backend.konan.ir.interop
 
 import org.jetbrains.kotlin.backend.konan.InteropBuiltIns
 import org.jetbrains.kotlin.backend.konan.descriptors.isFromInteropLibrary
-import org.jetbrains.kotlin.descriptors.isFinalOrEnum
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.lazy.*
@@ -26,8 +25,8 @@ internal class IrProviderForInteropStubs(
 
     override fun getDeclaration(symbol: IrSymbol): IrLazyDeclarationBase? = when {
         !symbol.descriptor.module.isFromInteropLibrary() -> null
-        symbol is IrEnumEntrySymbol -> null
-        symbol.isCEnumSymbol(interopBuiltIns) -> null
+        // Looks like we need some kind of dispatcher for these 2 providers.
+        symbol.findCEnumDescriptor(interopBuiltIns) != null -> null
         else -> provideIrDeclaration(symbol)
     }
 

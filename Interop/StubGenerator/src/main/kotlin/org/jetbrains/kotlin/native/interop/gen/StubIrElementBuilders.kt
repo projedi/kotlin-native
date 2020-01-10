@@ -284,6 +284,8 @@ internal class EnumStubBuilder(
 
     private fun constructEnumVarClass(): ClassStub.Simple {
 
+        val enumVarClassifier = classifier.nested("Var")
+
         val rawPtrConstructorParam = FunctionParameterStub("rawPtr", context.platform.getRuntimeType("NativePtr"))
         val superClass = context.platform.getRuntimeType("CEnumVar")
         require(superClass is ClassifierStubType)
@@ -295,7 +297,6 @@ internal class EnumStubBuilder(
         )
         val superClassInit = SuperClassInit(superClass, listOf(GetConstructorParameter(rawPtrConstructorParam)))
 
-        val companionSuper = superClass.nested("Type")
         // Assuming base type is integer.
         // TODO: Check is this assumption is really correct and make code more robust.
         val baseIntegerTypeSize = when (val unwrappedType = enumDef.baseType.unwrapTypedefs()) {
@@ -304,11 +305,10 @@ internal class EnumStubBuilder(
             else -> error("Incorrect base type for enum")
         }
         val typeSize = listOf(IntegralConstantStub(baseIntegerTypeSize, 4, true))
-        val companionSuperInit = SuperClassInit(companionSuper, typeSize)
-        val companionClassifier = classifier.nested("Companion")
+        val companionSuper = superClass.nested("Type")
         val companion = ClassStub.Companion(
-                classifier = companionClassifier,
-                superClassInit = companionSuperInit
+                classifier = enumVarClassifier.nested("Companion"),
+                superClassInit = SuperClassInit(companionSuper, typeSize)
         )
         val valueProperty = PropertyStub(
                 name = "value",
@@ -321,9 +321,8 @@ internal class EnumStubBuilder(
                 ),
                 origin = StubOrigin.SyntheticEnumVarValueField(enumDef)
         )
-
         return ClassStub.Simple(
-                classifier = classifier.nested("Var"),
+                classifier = enumVarClassifier,
                 constructors = listOf(primaryConstructor),
                 superClassInit = superClassInit,
                 companion = companion,
