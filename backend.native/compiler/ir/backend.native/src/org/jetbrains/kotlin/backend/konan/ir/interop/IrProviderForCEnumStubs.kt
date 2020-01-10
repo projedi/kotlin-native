@@ -24,15 +24,14 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.module
 // TODO: Explain why we use a different approach for CEnum
 internal class IrProviderForCEnumStubs(
         context: GeneratorContext,
-        private val interopBuiltIns: InteropBuiltIns,
-        konanSymbols: KonanSymbols
+        private val interopBuiltIns: InteropBuiltIns
 ) : IrProvider {
 
     private val symbolTable: SymbolTable = context.symbolTable
 
     private val filesMap = mutableMapOf<PackageFragmentDescriptor, IrFile>()
 
-    private val cEnumClassGenerator = CEnumClassGenerator(context, konanSymbols)
+    private val cEnumClassGenerator = CEnumClassGenerator(context)
 
     var module: IrModuleFragment? = null
         set(value) {

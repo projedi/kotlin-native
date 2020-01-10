@@ -13,12 +13,11 @@ import org.jetbrains.kotlin.ir.util.withScope
 import org.jetbrains.kotlin.psi2ir.generators.GeneratorContext
 
 internal class CEnumClassCompanionGenerator(
-        override val context: GeneratorContext,
-        konanSymbols: KonanSymbols
+        override val context: GeneratorContext
 ) : GeneratorContextAware {
 
     private val cEnumByValueFunctionGenerator =
-            CEnumByValueFunctionGenerator(context, konanSymbols)
+            CEnumByValueFunctionGenerator(context)
 
     // Depends on already generated `.values()` irFunction.
     fun generateEnumCompanionObject(enumClass: IrClass): IrClass {
@@ -34,11 +33,12 @@ internal class CEnumClassCompanionGenerator(
                     context.irBuiltIns,
                     isPrimary = true
             )
-            val valuesIrFunction = enumClass.functions.single { it.name.identifier == "values" }
+            val valuesFunction = enumClass.functions.single { it.name.identifier == "values" }
             val byValueIrFunction = cEnumByValueFunctionGenerator
-                    .generateByValueFunction(companionIrClass, valuesIrFunction)
+                    .generateByValueFunction(companionIrClass, valuesFunction)
             companionIrClass.addMember(byValueIrFunction)
         }
+        companionIrClass.addFakeOverridesWithProperties()
         return companionIrClass
     }
 }

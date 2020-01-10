@@ -204,7 +204,7 @@ internal val psiToIrPhase = konanUnitPhase(
                     config.configuration.languageVersionSettings
             )
             val irProviderForInteropStubs = IrProviderForInteropStubs(interopBuiltIns)
-            val irProviderForCEnums = IrProviderForCEnumStubs(symbolTable, generatorContext, interopBuiltIns, symbols)
+            val irProviderForCEnums = IrProviderForCEnumStubs(generatorContext, interopBuiltIns)
             val irProviders = listOf(irProviderForInteropStubs, irProviderForCEnums, functionIrClassFactory, deserializer, stubGenerator)
             stubGenerator.setIrProviders(irProviders)
             val module = translator.generateModuleFragment(generatorContext, environment.getSourceFiles(), irProviders)

@@ -19,8 +19,7 @@ import org.jetbrains.kotlin.util.OperatorNameConventions
  * Generate IR for function that returns appropriate enum entry for the provided integral value.
  */
 internal class CEnumByValueFunctionGenerator(
-        override val context: GeneratorContext,
-        private val konanSymbols: KonanSymbols
+        override val context: GeneratorContext
 ) : GeneratorContextAware {
     fun generateByValueFunction(companionIrClass: IrClass, valuesIrFunction: IrSimpleFunction): IrFunction {
         val byValueFunctionDescriptor = companionIrClass.descriptor.findDeclarationByName<FunctionDescriptor>("byValue")!!
@@ -87,7 +86,7 @@ internal class CEnumByValueFunctionGenerator(
                     )
                 }
             }
-            +irCall(konanSymbols.throwIllegalStateException)
+            +irReturn(irNull())
         }
         return byValueIrFunction
     }
