@@ -7,10 +7,7 @@ import org.jetbrains.kotlin.backend.konan.ir.KonanSymbols
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.ir.builders.irBlockBody
-import org.jetbrains.kotlin.ir.builders.irExprBody
-import org.jetbrains.kotlin.ir.builders.irGet
-import org.jetbrains.kotlin.ir.builders.irGetField
+import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.*
@@ -69,8 +66,8 @@ internal class CEnumClassGenerator(override val context: GeneratorContext) : Gen
                 getter.parent = irClass
                 getter.createDispatchReceiverParameter(IrDeclarationOrigin.INSTANCE_RECEIVER)
                 getter.returnType = propertyDescriptor.getter!!.returnType!!.toIrType()
-                getter.body = irBuilder(context.irBuiltIns, getter.symbol).run {
-                    irExprBody(
+                getter.body = irBuilder(context.irBuiltIns, getter.symbol).irBlockBody {
+                    +irReturn(
                             irGetField(
                                     irGet(getter.dispatchReceiverParameter!!),
                                     irProperty.backingField!!
