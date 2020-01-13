@@ -253,18 +253,19 @@ internal val interopPart2Phase = makeKonanFileLoweringPhase(
         prerequisite = setOf(localFunctionsPhase)
 )
 
-internal val varargPhase = makeKonanFileLoweringPhase(
-        ::VarargInjectionLowering,
-        name = "Vararg",
-        description = "Vararg lowering",
-        prerequisite = setOf(callableReferencePhase, defaultParameterExtentPhase)
-)
-
 internal val compileTimeEvaluatePhase = makeKonanFileLoweringPhase(
         ::CompileTimeEvaluateLowering,
         name = "CompileTimeEvaluate",
         description = "Compile time evaluation lowering",
-        prerequisite = setOf(varargPhase)
+        // TODO: Check if it's indeed correct.
+        prerequisite = setOf(callableReferencePhase, defaultParameterExtentPhase)
+)
+
+internal val varargPhase = makeKonanFileLoweringPhase(
+        ::VarargInjectionLowering,
+        name = "Vararg",
+        description = "Vararg lowering",
+        prerequisite = setOf(compileTimeEvaluatePhase)
 )
 
 internal val coroutinesPhase = makeKonanFileLoweringPhase(
