@@ -498,6 +498,9 @@ class StubIrTextEmitter(
             "@Deprecated(${annotationStub.message.quoteAsKotlinLiteral()}, " +
                     "ReplaceWith(${annotationStub.replaceWith.quoteAsKotlinLiteral()}), " +
                     "DeprecationLevel.ERROR)"
+        // TODO: It should be an assertion actually since StubIR for the textual output
+        //  should not have this annotation.
+        is AnnotationStub.EnumAlias -> ""
     }
 
     private fun renderEnumEntry(enumEntryStub: EnumEntryStub): String =

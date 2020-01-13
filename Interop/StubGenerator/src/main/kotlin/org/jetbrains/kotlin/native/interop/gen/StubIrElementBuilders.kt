@@ -333,11 +333,13 @@ internal class EnumStubBuilder(
     }
 
     private fun constructAliasProperty(enumConstant: EnumConstant, entry: EnumEntryStub): PropertyStub {
+        val annotation = AnnotationStub.EnumAlias(entry.name)
         return PropertyStub(
                 enumConstant.name,
                 ClassifierStubType(classifier),
                 kind = PropertyStub.Kind.Val(PropertyAccessor.Getter.GetEnumEntry(entry)),
-                origin = StubOrigin.EnumEntry(enumConstant)
+                origin = StubOrigin.EnumEntry(enumConstant),
+                annotations = listOf(annotation)
         )
     }
 

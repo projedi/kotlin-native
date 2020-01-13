@@ -50,5 +50,6 @@ public class CEnumEntryValue {
     annotation class UInt(val value: kotlin.UInt)
     @Retention(AnnotationRetention.BINARY)
     annotation class ULong(val value: kotlin.ULong)
-
 }
+
+public annotation class CEnumEntryAlias(val entryName: String)

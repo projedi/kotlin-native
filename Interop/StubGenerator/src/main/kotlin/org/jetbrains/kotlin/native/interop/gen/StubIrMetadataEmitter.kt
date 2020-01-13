@@ -380,6 +380,9 @@ private class MappingExtensions(
                     ("replaceWith" to replaceWith(replaceWith)),
                     ("level" to deprecationLevel(DeprecationLevel.ERROR))
             )
+            is AnnotationStub.EnumAlias -> mapOfNotNull(
+                    ("entryName" to entryName).asAnnotationArgument()
+            )
         }
         return KmAnnotation(classifier.fqNameSerialized, args)
     }

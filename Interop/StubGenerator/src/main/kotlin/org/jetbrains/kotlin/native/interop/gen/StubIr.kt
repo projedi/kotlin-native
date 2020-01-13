@@ -207,6 +207,9 @@ sealed class AnnotationStub(val classifier: Classifier) {
     class Deprecated(val message: String, val replaceWith: String) :
             AnnotationStub(Classifier.topLevel("kotlin", "Deprecated"))
 
+    class EnumAlias(val entryName: String) :
+            AnnotationStub(Classifier.topLevel(cinteropInternalPackage, "CEnumEntryAlias"))
+
     private companion object {
         val cCallClassifier = Classifier.topLevel(cinteropInternalPackage, "CCall")
     }

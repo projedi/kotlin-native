@@ -47,6 +47,7 @@ internal class CEnumClassGenerator(override val context: GeneratorContext) : Gen
                 SYNTHETIC_OFFSET, SYNTHETIC_OFFSET,
                 IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB, propertyDescriptor
         )
+        // TODO: We dont need scope.
         symbolTable.withScope(propertyDescriptor) {
             irProperty.parent = irClass
             irProperty.backingField = symbolTable.declareField(
