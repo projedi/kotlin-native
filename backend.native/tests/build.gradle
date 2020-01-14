@@ -2187,6 +2187,10 @@ task listof1(type: KonanLocalTest) {
     source = "datagen/literals/listof1.kt"
 }
 
+task mapof0(type: KonanLocalTest) {
+    goldValue = "true\n{a=x, b=y, c=z}\n"
+    source = "datagen/literals/mapof0.kt"
+}
 
 task moderately_large_array(type: KonanLocalTest) {
     goldValue = "0\n"
