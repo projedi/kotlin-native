@@ -22,6 +22,8 @@ import org.jetbrains.kotlin.backend.common.ir.ir2string
 import org.jetbrains.kotlin.backend.common.lower.createIrBuilder
 import org.jetbrains.kotlin.backend.common.lower.irBlock
 import org.jetbrains.kotlin.backend.konan.KonanBackendContext
+import org.jetbrains.kotlin.backend.konan.RuntimeNames
+import org.jetbrains.kotlin.backend.konan.descriptors.getAnnotationStringValue
 import org.jetbrains.kotlin.builtins.PrimitiveType
 import org.jetbrains.kotlin.builtins.UnsignedType
 import org.jetbrains.kotlin.ir.IrElement
@@ -37,6 +39,18 @@ import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.util.OperatorNameConventions
+
+private fun skipCall(callSite: IrFunctionAccessExpression): Boolean {
+    val function = callSite.symbol.owner
+    val annotation = function.annotations.findAnnotation(RuntimeNames.typedIntrinsicAnnotation)
+        ?: return false
+    val annotationValue = annotation.getAnnotationStringValue()!!
+
+    when (annotationValue) {
+        "LIST_OF_INTERNAL" -> return true
+        else -> return false
+    }
+}
 
 internal class VarargInjectionLowering constructor(val context: KonanBackendContext): DeclarationContainerLoweringPass {
     override fun lower(irDeclarationContainer: IrDeclarationContainer) {
@@ -88,7 +102,10 @@ internal class VarargInjectionLowering constructor(val context: KonanBackendCont
             }
 
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
-                replaceEmptyParameterWithEmptyArray(expression)
+                if (!skipCall(expression)) {
+                    replaceEmptyParameterWithEmptyArray(expression)
+                }
+
                 return expression
             }
 
