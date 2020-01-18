@@ -55,6 +55,7 @@ class IntrinsicType {
         const val IMMUTABLE_BLOB                = "IMMUTABLE_BLOB"
         const val INIT_INSTANCE                 = "INIT_INSTANCE"
         const val MAP_OF_INTERNAL               = "MAP_OF_INTERNAL"
+        const val SET_OF_INTERNAL               = "SET_OF_INTERNAL"
 
         // Enums
         const val ENUM_VALUES                   = "ENUM_VALUES"

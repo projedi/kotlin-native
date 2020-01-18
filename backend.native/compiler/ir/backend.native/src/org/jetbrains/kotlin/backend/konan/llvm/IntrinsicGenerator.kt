@@ -66,6 +66,7 @@ internal enum class IntrinsicType {
     IMMUTABLE_BLOB,
     INIT_INSTANCE,
     MAP_OF_INTERNAL,
+    SET_OF_INTERNAL,
     // Enums
     ENUM_VALUES,
     ENUM_VALUE_OF,
@@ -364,6 +365,7 @@ internal class IntrinsicGenerator(private val environment: IntrinsicGeneratorEnv
                 IntrinsicType.INTEROP_NATIVE_PTR_PLUS_LONG -> emitNativePtrPlusLong(args)
                 IntrinsicType.INTEROP_GET_NATIVE_NULL_PTR -> emitGetNativeNullPtr()
                 IntrinsicType.LIST_OF_INTERNAL -> emitListOfInternal(callSite, args)
+                IntrinsicType.SET_OF_INTERNAL -> emitSetOfInternal(callSite, args)
                 IntrinsicType.IDENTITY -> emitIdentity(args)
                 IntrinsicType.GET_CONTINUATION -> emitGetContinuation()
                 IntrinsicType.INTEROP_MEMORY_COPY -> emitMemoryCopy(callSite, args)
@@ -439,6 +441,29 @@ internal class IntrinsicGenerator(private val environment: IntrinsicGeneratorEnv
                 resultingMap.maxProbeDistance,
                 resultingMap.length,
                 resultingMap.hashShift).llvm
+    }
+
+    private fun FunctionGenerationContext.emitSetOfInternal(callSite: IrCall, args: List<LLVMValueRef>): LLVMValueRef {
+        val varargExpression = callSite.getValueArgument(0) as IrVararg
+
+        val keys = varargExpression.elements.map { IrConstKind.String.valueOf(it as IrConst<*>) }
+        val resultingMap = IntrinsicHashMap<String, Unit>(keys, null) { it.cityHash64().toInt() }
+
+        var keysArray = ArrayList<ConstPointer>(resultingMap.keys.size)
+        for (key in resultingMap.keys) {
+            keysArray.add(context.llvm.staticData.createKotlinStringLiteral(key))
+        }
+
+        val hashMap = context.llvm.staticData.createConstHashMap(
+                context.llvm.staticData.createConstKotlinArray(context.ir.symbols.array.owner, keysArray),
+                null,
+                context.llvm.staticData.createConstKotlinArray(context.ir.symbols.intArray.owner, resultingMap.presence.map { Int32(it) } ),
+                context.llvm.staticData.createConstKotlinArray(context.ir.symbols.intArray.owner, resultingMap.hashes.map { Int32(it) } ),
+                resultingMap.maxProbeDistance,
+                resultingMap.length,
+                resultingMap.hashShift)
+
+        return context.llvm.staticData.createConstHashSet(hashMap).llvm
     }
 
     private fun FunctionGenerationContext.emitGetNativeNullPtr(): LLVMValueRef =

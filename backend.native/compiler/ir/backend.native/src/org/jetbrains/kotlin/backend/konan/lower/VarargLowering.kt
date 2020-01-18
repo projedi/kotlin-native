@@ -47,8 +47,9 @@ private fun skipCall(callSite: IrFunctionAccessExpression): Boolean {
     val annotationValue = annotation.getAnnotationStringValue()!!
 
     when (annotationValue) {
-        "LIST_OF_INTERNAL" -> return true
-        "MAP_OF_INTERNAL" -> return true
+        "LIST_OF_INTERNAL",
+        "MAP_OF_INTERNAL",
+        "SET_OF_INTERNAL" -> return true
         else -> return false
     }
 }

@@ -145,6 +145,24 @@ internal fun StaticData.createConstHashMap(
     return createConstKotlinObject(hashMapClass, *sorted.values.toTypedArray())
 }
 
+internal fun StaticData.createConstHashSet(hashMap: ConstPointer): ConstPointer {
+    val hashSetClass = context.ir.symbols.hashSet.owner
+
+    val hashSetFqName = hashSetClass.fqNameForIrSerialization
+    val hashSetFields = mapOf(
+        "$hashSetFqName.backing" to hashMap)
+
+    // Now sort these values according to the order of fields returned by getFields()
+    // to match the sorting order of the real HashSet().
+    val sorted = linkedMapOf<String, ConstValue>()
+    context.getLayoutBuilder(hashSetClass).fields.forEach {
+        val fqName = it.fqNameForIrSerialization.asString()
+        sorted.put(fqName, hashSetFields[fqName]!!)
+    }
+
+    return createConstKotlinObject(hashSetClass, *sorted.values.toTypedArray())
+}
+
 internal fun StaticData.createUniqueInstance(
         kind: UniqueKind, bodyType: LLVMTypeRef, typeInfo: ConstPointer): ConstPointer {
     assert (getStructElements(bodyType).size == 1) // ObjHeader only.

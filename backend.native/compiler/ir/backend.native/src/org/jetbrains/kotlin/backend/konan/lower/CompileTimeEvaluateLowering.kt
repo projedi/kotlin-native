@@ -38,6 +38,8 @@ internal class CompileTimeEvaluateLowering(val context: Context): FileLoweringPa
                         return transformTo(expression)
                     functionName == "kotlin.collections.mapOf" && parametersCount == 1 && !hasReceiver ->
                         return transformMapOf(expression)
+                    functionName == "kotlin.collections.setOf" && parametersCount == 1 && !hasReceiver ->
+                        return transformSetOf(expression)
                     else -> return expression
                 }
             }
@@ -105,6 +107,25 @@ internal class CompileTimeEvaluateLowering(val context: Context): FileLoweringPa
 
                 val typeArgument = expression.getTypeArgument(0)!!
                 return builder.irCall(context.ir.symbols.mapOfInternal.owner, listOf(typeArgument)).apply {
+                    putValueArgument(0, elementsArr)
+                }
+            }
+
+            fun transformSetOf(expression: IrCall) : IrExpression {
+                // The function is kotlin.collections.setOf<T>(vararg elements: T).
+
+                val elementsArr = expression.getValueArgument(0) as? IrVararg
+                    ?: return expression
+
+                // TODO: Can also be done for other types
+                if (elementsArr.elements.any { it is IrSpreadElement }
+                        || !elementsArr.elements.all { it is IrConst<*> && it.type.isString() })
+                    return expression
+
+                builder.at(expression)
+
+                val typeArgument = expression.getTypeArgument(0)!!
+                return builder.irCall(context.ir.symbols.setOfInternal.owner, listOf(typeArgument)).apply {
                     putValueArgument(0, elementsArr)
                 }
             }

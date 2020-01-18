@@ -211,6 +211,15 @@ internal fun <K, V> mapOfInternal(vararg pairs: Pair<K, V>): Map<K, V> {
     return result
 }
 
+@TypedIntrinsic(IntrinsicType.SET_OF_INTERNAL)
+@PublishedApi
+internal fun <T> setOfInternal(vararg elements: T): Set<T> {
+    val result = HashSet<T>(elements.size)
+    for (i in 0 until elements.size)
+        result.add(elements[i])
+    return result
+}
+
 @PublishedApi
 @SymbolName("OnUnhandledException")
 external internal fun OnUnhandledException(throwable: Throwable)
