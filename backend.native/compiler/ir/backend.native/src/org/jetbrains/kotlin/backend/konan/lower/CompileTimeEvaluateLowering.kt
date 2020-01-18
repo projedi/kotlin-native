@@ -24,19 +24,25 @@ internal class CompileTimeEvaluateLowering(val context: Context): FileLoweringPa
                 expression.transformChildrenVoid(this)
 
                 val callee = expression.symbol.owner
-                // TODO
-                if (callee.fqNameForIrSerialization.asString() != "kotlin.collections.listOf" || callee.valueParameters.size != 1)
-                    return expression
+                // TODO: refer functions more reliably.
+                val functionName = callee.fqNameForIrSerialization.asString()
+                val parametersCount = callee.valueParameters.size
+                when {
+                    functionName == "kotlin.collections.listOf" && parametersCount == 1 ->
+                        return transformListOf(expression)
+                    else -> return expression
+                }
+            }
+
+            fun transformListOf(expression: IrCall) : IrExpression {
+                // The function is kotlin.collections.listOf<T>(vararg args: T).
+
                 val elementsArr = expression.getValueArgument(0) as? IrVararg
                     ?: return expression
-
-                // The function is kotlin.collections.listOf<T>(vararg args: T).
-                // TODO: refer functions more reliably.
 
                 if (elementsArr.elements.any { it is IrSpreadElement }
                         || !elementsArr.elements.all { it is IrConst<*> && it.type.isString() })
                     return expression
-
 
                 builder.at(expression)
 
