@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.backend.common.lower.at
 import org.jetbrains.kotlin.backend.konan.Context
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.expressions.*
+import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.types.isString
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.irCall
@@ -24,12 +25,17 @@ internal class CompileTimeEvaluateLowering(val context: Context): FileLoweringPa
                 expression.transformChildrenVoid(this)
 
                 val callee = expression.symbol.owner
-                // TODO: refer functions more reliably.
+                // TODO: refer to functions more reliably.
                 val functionName = callee.fqNameForIrSerialization.asString()
                 val parametersCount = callee.valueParameters.size
+                val hasDispatchReceiver = callee.dispatchReceiverParameter != null
+                val hasExtensionReceiver = callee.extensionReceiverParameter != null
+                val hasReceiver = hasDispatchReceiver || hasExtensionReceiver
                 when {
-                    functionName == "kotlin.collections.listOf" && parametersCount == 1 ->
+                    functionName == "kotlin.collections.listOf" && parametersCount == 1 && !hasReceiver ->
                         return transformListOf(expression)
+                    functionName == "kotlin.to" && parametersCount == 1 && hasExtensionReceiver ->
+                        return transformTo(expression)
                     else -> return expression
                 }
             }
@@ -49,6 +55,17 @@ internal class CompileTimeEvaluateLowering(val context: Context): FileLoweringPa
                 val typeArgument = expression.getTypeArgument(0)!!
                 return builder.irCall(context.ir.symbols.listOfInternal.owner, listOf(typeArgument)).apply {
                     putValueArgument(0, elementsArr)
+                }
+            }
+
+            fun transformTo(expression: IrCall) : IrExpression {
+                val lhs = expression.extensionReceiver ?: return expression
+                val rhs = expression.getValueArgument(0) ?: return expression
+                return IrConstructorCallImpl.fromSymbolOwner(expression.startOffset, expression.endOffset, expression.type, context.ir.symbols.pairConstructor).apply {
+                    putValueArgument(0, lhs)
+                    putTypeArgument(0, lhs.type)
+                    putValueArgument(1, rhs)
+                    putTypeArgument(1, rhs.type)
                 }
             }
         })

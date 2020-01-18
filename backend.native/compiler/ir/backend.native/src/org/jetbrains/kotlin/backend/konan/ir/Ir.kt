@@ -468,6 +468,9 @@ internal class KonanSymbols(
             context.builtIns.builtInsModule.findClassAcrossModuleDependencies(
                     ClassId.topLevel(KonanFqNames.sharedImmutable))!!)
 
+    val pairConstructor = symbolTable.referenceConstructor(
+            context.builtIns.builtInsModule.findClassAcrossModuleDependencies(ClassId.topLevel(FqName("kotlin.Pair")))!!.constructors.single())
+
     private fun topLevelClass(fqName: String): IrClassSymbol = topLevelClass(FqName(fqName))
     private fun topLevelClass(fqName: FqName): IrClassSymbol = classById(ClassId.topLevel(fqName))
     private fun classById(classId: ClassId): IrClassSymbol =
