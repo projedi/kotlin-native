@@ -8,11 +8,16 @@ package datagen.literals.mapof0
 import kotlin.test.*
 
 @Test fun runTest() {
-    val map = foo()
-    println(map === foo())
-    println(map.toString())
+    val x = foo1()
+    println(x === foo1())
+    println(x === foo2())
+    println(x.toString())
 }
 
-fun foo(): Map<String, String> {
+fun foo1(): Map<String, String> {
+    return mapOf("a" to "x", "b" to "y", "c" to "z")
+}
+
+fun foo2(): Map<String, String> {
     return mapOf("a" to "x", "b" to "y", "c" to "z")
 }

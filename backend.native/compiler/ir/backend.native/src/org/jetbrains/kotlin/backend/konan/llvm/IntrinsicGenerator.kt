@@ -433,14 +433,30 @@ internal class IntrinsicGenerator(private val environment: IntrinsicGeneratorEnv
             valuesArray.add(context.llvm.staticData.createKotlinStringLiteral(value))
         }
 
-        return context.llvm.staticData.createConstHashMap(
+        val objRef = context.llvm.staticData.createConstHashMap(
                 context.llvm.staticData.createConstKotlinArray(context.ir.symbols.array.owner, keysArray),
                 context.llvm.staticData.createConstKotlinArray(context.ir.symbols.array.owner, valuesArray),
                 context.llvm.staticData.createConstKotlinArray(context.ir.symbols.intArray.owner, resultingMap.presence.map { Int32(it) } ),
                 context.llvm.staticData.createConstKotlinArray(context.ir.symbols.intArray.owner, resultingMap.hashes.map { Int32(it) } ),
                 resultingMap.maxProbeDistance,
                 resultingMap.length,
-                resultingMap.hashShift).llvm
+                resultingMap.hashShift)
+
+        val valueStr = StringBuilder("${resultingMap.length}{")
+        for (i in resultingMap.keys.indices) {
+            valueStr.append('"')
+            valueStr.append(resultingMap.keys[i])
+            valueStr.append("\":\"")
+            valueStr.append(resultingMap.values!![i])
+            valueStr.append("\",")
+        }
+        valueStr.append('}')
+        val name = "khashmap:" + valueStr.toString().globalHashBase64
+
+        val res = context.llvm.staticData.createAlias(name, objRef)
+        LLVMSetLinkage(res.llvm, LLVMLinkage.LLVMWeakAnyLinkage)
+
+        return res.llvm
     }
 
     private fun FunctionGenerationContext.emitSetOfInternal(callSite: IrCall, args: List<LLVMValueRef>): LLVMValueRef {

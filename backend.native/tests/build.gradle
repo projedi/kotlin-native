@@ -2193,7 +2193,7 @@ task inline_to(type: KonanLocalTest) {
 }
 
 task mapof0(type: KonanLocalTest) {
-    goldValue = "true\n{a=x, b=y, c=z}\n"
+    goldValue = "true\ntrue\n{a=x, b=y, c=z}\n"
     source = "datagen/literals/mapof0.kt"
 }
 
