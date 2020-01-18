@@ -108,6 +108,7 @@ internal class KonanSymbols(
     }.toMap()
 
     val arrayList = symbolTable.referenceClass(getArrayListClassDescriptor(context))
+    val hashMap = symbolTable.referenceClass(getHashMapClassDescriptor(context))
 
     val symbolName = topLevelClass(RuntimeNames.symbolNameAnnotation)
     val filterExceptions = topLevelClass(RuntimeNames.filterExceptions)
@@ -471,6 +472,8 @@ internal class KonanSymbols(
     val pairConstructor = symbolTable.referenceConstructor(
             context.builtIns.builtInsModule.findClassAcrossModuleDependencies(ClassId.topLevel(FqName("kotlin.Pair")))!!.constructors.single())
 
+    val mapOfInternal = internalFunction("mapOfInternal")
+
     private fun topLevelClass(fqName: String): IrClassSymbol = topLevelClass(FqName(fqName))
     private fun topLevelClass(fqName: FqName): IrClassSymbol = classById(ClassId.topLevel(fqName))
     private fun classById(classId: ClassId): IrClassSymbol =
@@ -530,6 +533,15 @@ private fun getArrayListClassDescriptor(context: Context): ClassDescriptor {
     val module = context.builtIns.builtInsModule
     val pkg = module.getPackage(FqName.fromSegments(listOf("kotlin", "collections")))
     val classifier = pkg.memberScope.getContributedClassifier(Name.identifier("ArrayList"),
+            NoLookupLocation.FROM_BACKEND)
+
+    return classifier as ClassDescriptor
+}
+
+private fun getHashMapClassDescriptor(context: Context): ClassDescriptor {
+    val module = context.builtIns.builtInsModule
+    val pkg = module.getPackage(FqName.fromSegments(listOf("kotlin", "collections")))
+    val classifier = pkg.memberScope.getContributedClassifier(Name.identifier("HashMap"),
             NoLookupLocation.FROM_BACKEND)
 
     return classifier as ClassDescriptor

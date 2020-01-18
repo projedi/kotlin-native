@@ -36,6 +36,8 @@ internal class CompileTimeEvaluateLowering(val context: Context): FileLoweringPa
                         return transformListOf(expression)
                     functionName == "kotlin.to" && parametersCount == 1 && hasExtensionReceiver ->
                         return transformTo(expression)
+                    functionName == "kotlin.collections.mapOf" && parametersCount == 1 && !hasReceiver ->
+                        return transformMapOf(expression)
                     else -> return expression
                 }
             }
@@ -66,6 +68,44 @@ internal class CompileTimeEvaluateLowering(val context: Context): FileLoweringPa
                     putTypeArgument(0, lhs.type)
                     putValueArgument(1, rhs)
                     putTypeArgument(1, rhs.type)
+                }
+            }
+
+            fun transformMapOf(expression: IrCall) : IrExpression {
+                // The function is kotlin.collections.mapOf<K, V>(vararg pairs: Pair<K, V>).
+
+                val elementsArr = expression.getValueArgument(0) as? IrVararg
+                    ?: return expression
+
+                val isPairOfConsts = fun(element: IrVarargElement): Boolean {
+                    if (element !is IrConstructorCall)
+                        return false
+                    if (element.valueArgumentsCount != 2)
+                        return false
+                    val first = element.getValueArgument(0)
+                    if (first !is IrConst<*>)
+                        return false
+                    // TODO: Can also be done for other types
+                    if (first.kind != IrConstKind.String)
+                        return false
+                    val second = element.getValueArgument(1)
+                    if (second !is IrConst<*>)
+                        return false
+                    // TODO: Can also be done for other types
+                    if (second.kind != IrConstKind.String)
+                        return false
+                    return true
+                }
+
+                if (elementsArr.elements.any { it is IrSpreadElement }
+                        || !elementsArr.elements.all(isPairOfConsts))
+                    return expression
+
+                builder.at(expression)
+
+                val typeArgument = expression.getTypeArgument(0)!!
+                return builder.irCall(context.ir.symbols.mapOfInternal.owner, listOf(typeArgument)).apply {
+                    putValueArgument(0, elementsArr)
                 }
             }
         })

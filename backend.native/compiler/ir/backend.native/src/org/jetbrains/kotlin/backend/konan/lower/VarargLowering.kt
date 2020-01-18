@@ -48,6 +48,7 @@ private fun skipCall(callSite: IrFunctionAccessExpression): Boolean {
 
     when (annotationValue) {
         "LIST_OF_INTERNAL" -> return true
+        "MAP_OF_INTERNAL" -> return true
         else -> return false
     }
 }
