@@ -424,37 +424,41 @@ internal class IntrinsicGenerator(private val environment: IntrinsicGeneratorEnv
         val values = varargExpression.elements.map { IrConstKind.String.valueOf(((it as IrConstructorCall).getValueArgument(1)!! as IrConst<*>)) }
         val resultingMap = IntrinsicHashMap(keys, values) { it.cityHash64().toInt() }
 
-        var keysArray = ArrayList<ConstPointer>(resultingMap.keys.size)
-        for (key in resultingMap.keys) {
-            keysArray.add(context.llvm.staticData.kotlinStringLiteral(key))
-        }
-        var valuesArray = ArrayList<ConstPointer>(resultingMap.values!!.size)
-        for (value in resultingMap.values!!) {
-            valuesArray.add(context.llvm.staticData.kotlinStringLiteral(value))
-        }
-
-        val objRef = context.llvm.staticData.createConstHashMap(
-                context.llvm.staticData.createConstKotlinArray(context.ir.symbols.array.owner, keysArray),
-                context.llvm.staticData.createConstKotlinArray(context.ir.symbols.array.owner, valuesArray),
-                context.llvm.staticData.createConstKotlinArray(context.ir.symbols.intArray.owner, resultingMap.presence.map { Int32(it) } ),
-                context.llvm.staticData.createConstKotlinArray(context.ir.symbols.intArray.owner, resultingMap.hashes.map { Int32(it) } ),
-                resultingMap.maxProbeDistance,
-                resultingMap.length,
-                resultingMap.hashShift)
-
-        val valueStr = StringBuilder("${resultingMap.length}{")
+        val valueStrBuilder = StringBuilder("${resultingMap.length}{")
         for (i in resultingMap.keys.indices) {
-            valueStr.append('"')
-            valueStr.append(resultingMap.keys[i])
-            valueStr.append("\":\"")
-            valueStr.append(resultingMap.values!![i])
-            valueStr.append("\",")
+            valueStrBuilder.append('"')
+            valueStrBuilder.append(resultingMap.keys[i])
+            valueStrBuilder.append("\":\"")
+            valueStrBuilder.append(resultingMap.values!![i])
+            valueStrBuilder.append("\",")
         }
-        valueStr.append('}')
-        val name = "khashmap:" + valueStr.toString().globalHashBase64
+        valueStrBuilder.append('}')
+        val valueStr = valueStrBuilder.toString()
 
-        val res = context.llvm.staticData.createAlias(name, objRef)
-        LLVMSetLinkage(res.llvm, LLVMLinkage.LLVMWeakAnyLinkage)
+        val res = context.llvm.staticData.hashMapLiteral(valueStr) {
+            var keysArray = ArrayList<ConstPointer>(resultingMap.keys.size)
+            for (key in resultingMap.keys) {
+                keysArray.add(context.llvm.staticData.kotlinStringLiteral(key))
+            }
+            var valuesArray = ArrayList<ConstPointer>(resultingMap.values!!.size)
+            for (value in resultingMap.values!!) {
+                valuesArray.add(context.llvm.staticData.kotlinStringLiteral(value))
+            }
+
+            val objRef = context.llvm.staticData.createConstHashMap(
+                    context.llvm.staticData.createConstKotlinArray(context.ir.symbols.array.owner, keysArray),
+                    context.llvm.staticData.createConstKotlinArray(context.ir.symbols.array.owner, valuesArray),
+                    context.llvm.staticData.createConstKotlinArray(context.ir.symbols.intArray.owner, resultingMap.presence.map { Int32(it) } ),
+                    context.llvm.staticData.createConstKotlinArray(context.ir.symbols.intArray.owner, resultingMap.hashes.map { Int32(it) } ),
+                    resultingMap.maxProbeDistance,
+                    resultingMap.length,
+                    resultingMap.hashShift)
+            val name = "khashmap:" + valueStr.globalHashBase64
+
+            val res = context.llvm.staticData.createAlias(name, objRef)
+            LLVMSetLinkage(res.llvm, LLVMLinkage.LLVMWeakAnyLinkage)
+            res
+        }
 
         return res.llvm
     }
