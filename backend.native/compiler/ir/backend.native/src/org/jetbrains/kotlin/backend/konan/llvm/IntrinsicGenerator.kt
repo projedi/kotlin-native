@@ -467,7 +467,7 @@ internal class IntrinsicGenerator(private val environment: IntrinsicGeneratorEnv
 
         var keysArray = ArrayList<ConstPointer>(resultingMap.keys.size)
         for (key in resultingMap.keys) {
-            keysArray.add(context.llvm.staticData.createKotlinStringLiteral(key))
+            keysArray.add(context.llvm.staticData.kotlinStringLiteral(key))
         }
 
         val hashMap = context.llvm.staticData.createConstHashMap(
