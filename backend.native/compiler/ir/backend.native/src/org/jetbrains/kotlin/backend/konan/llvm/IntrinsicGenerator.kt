@@ -426,11 +426,11 @@ internal class IntrinsicGenerator(private val environment: IntrinsicGeneratorEnv
 
         var keysArray = ArrayList<ConstPointer>(resultingMap.keys.size)
         for (key in resultingMap.keys) {
-            keysArray.add(context.llvm.staticData.createKotlinStringLiteral(key))
+            keysArray.add(context.llvm.staticData.kotlinStringLiteral(key))
         }
         var valuesArray = ArrayList<ConstPointer>(resultingMap.values!!.size)
         for (value in resultingMap.values!!) {
-            valuesArray.add(context.llvm.staticData.createKotlinStringLiteral(value))
+            valuesArray.add(context.llvm.staticData.kotlinStringLiteral(value))
         }
 
         val objRef = context.llvm.staticData.createConstHashMap(
