@@ -107,9 +107,9 @@ internal class KonanSymbols(
         }
     }.toMap()
 
-    val arrayList = symbolTable.referenceClass(getArrayListClassDescriptor(context))
-    val hashMap = symbolTable.referenceClass(getHashMapClassDescriptor(context))
-    val hashSet = symbolTable.referenceClass(getHashSetClassDescriptor(context))
+    val arrayList = symbolTable.referenceClass(getClassDescriptor(context, listOf("kotlin", "collections"), "ArrayList"))
+    val hashMap = symbolTable.referenceClass(getClassDescriptor(context, listOf("kotlin", "collections"), "HashMap"))
+    val hashSet = symbolTable.referenceClass(getClassDescriptor(context, listOf("kotlin", "collections"), "HashSet"))
 
     val symbolName = topLevelClass(RuntimeNames.symbolNameAnnotation)
     val filterExceptions = topLevelClass(RuntimeNames.filterExceptions)
@@ -471,7 +471,7 @@ internal class KonanSymbols(
                     ClassId.topLevel(KonanFqNames.sharedImmutable))!!)
 
     val pairConstructor = symbolTable.referenceConstructor(
-            context.builtIns.builtInsModule.findClassAcrossModuleDependencies(ClassId.topLevel(FqName("kotlin.Pair")))!!.constructors.single())
+            getClassDescriptor(context, listOf("kotlin"), "Pair").constructors.single())
 
     val mapOfInternal = internalFunction("mapOfInternal")
     val setOfInternal = internalFunction("setOfInternal")
@@ -531,28 +531,10 @@ internal class KonanSymbols(
     fun getTestFunctionKind(kind: TestProcessor.FunctionKind) = testFunctionKindCache[kind]!!
 }
 
-private fun getArrayListClassDescriptor(context: Context): ClassDescriptor {
+private fun getClassDescriptor(context: Context, packageNameSegments: List<String>, identifier: String): ClassDescriptor {
     val module = context.builtIns.builtInsModule
-    val pkg = module.getPackage(FqName.fromSegments(listOf("kotlin", "collections")))
-    val classifier = pkg.memberScope.getContributedClassifier(Name.identifier("ArrayList"),
-            NoLookupLocation.FROM_BACKEND)
-
-    return classifier as ClassDescriptor
-}
-
-private fun getHashMapClassDescriptor(context: Context): ClassDescriptor {
-    val module = context.builtIns.builtInsModule
-    val pkg = module.getPackage(FqName.fromSegments(listOf("kotlin", "collections")))
-    val classifier = pkg.memberScope.getContributedClassifier(Name.identifier("HashMap"),
-            NoLookupLocation.FROM_BACKEND)
-
-    return classifier as ClassDescriptor
-}
-
-private fun getHashSetClassDescriptor(context: Context): ClassDescriptor {
-    val module = context.builtIns.builtInsModule
-    val pkg = module.getPackage(FqName.fromSegments(listOf("kotlin", "collections")))
-    val classifier = pkg.memberScope.getContributedClassifier(Name.identifier("HashSet"),
+    val pkg = module.getPackage(FqName.fromSegments(packageNameSegments))
+    val classifier = pkg.memberScope.getContributedClassifier(Name.identifier(identifier),
             NoLookupLocation.FROM_BACKEND)
 
     return classifier as ClassDescriptor
