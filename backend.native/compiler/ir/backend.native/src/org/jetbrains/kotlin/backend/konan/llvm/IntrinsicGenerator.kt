@@ -308,6 +308,8 @@ internal class IntrinsicGenerator(private val environment: IntrinsicGeneratorEnv
             }
             IntrinsicType.MAP_OF_INTERNAL ->
                 environment.functionGenerationContext.emitMapOfInternal(callSite)
+            IntrinsicType.SET_OF_INTERNAL ->
+                environment.functionGenerationContext.emitSetOfInternal(callSite)
             else -> null
         }
     }
@@ -366,7 +368,6 @@ internal class IntrinsicGenerator(private val environment: IntrinsicGeneratorEnv
                 IntrinsicType.INTEROP_NATIVE_PTR_PLUS_LONG -> emitNativePtrPlusLong(args)
                 IntrinsicType.INTEROP_GET_NATIVE_NULL_PTR -> emitGetNativeNullPtr()
                 IntrinsicType.LIST_OF_INTERNAL -> emitListOfInternal(callSite, args)
-                IntrinsicType.SET_OF_INTERNAL -> emitSetOfInternal(callSite, args)
                 IntrinsicType.IDENTITY -> emitIdentity(args)
                 IntrinsicType.GET_CONTINUATION -> emitGetContinuation()
                 IntrinsicType.INTEROP_MEMORY_COPY -> emitMemoryCopy(callSite, args)
@@ -387,7 +388,8 @@ internal class IntrinsicGenerator(private val environment: IntrinsicGeneratorEnv
                 IntrinsicType.COROUTINE_LAUNCHPAD,
                 IntrinsicType.OBJC_GET_SELECTOR,
                 IntrinsicType.IMMUTABLE_BLOB,
-                IntrinsicType.MAP_OF_INTERNAL ->
+                IntrinsicType.MAP_OF_INTERNAL,
+                IntrinsicType.SET_OF_INTERNAL ->
                     reportSpecialIntrinsic(intrinsicType)
             }
 
@@ -464,7 +466,7 @@ internal class IntrinsicGenerator(private val environment: IntrinsicGeneratorEnv
         return res.llvm
     }
 
-    private fun FunctionGenerationContext.emitSetOfInternal(callSite: IrCall, args: List<LLVMValueRef>): LLVMValueRef {
+    private fun FunctionGenerationContext.emitSetOfInternal(callSite: IrFunctionAccessExpression): LLVMValueRef {
         val varargExpression = callSite.getValueArgument(0) as IrVararg
 
         val keys = varargExpression.elements.map { IrConstKind.String.valueOf(it as IrConst<*>) }
