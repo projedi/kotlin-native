@@ -257,7 +257,6 @@ internal val compileTimeEvaluatePhase = makeKonanFileLoweringPhase(
         ::CompileTimeEvaluateLowering,
         name = "CompileTimeEvaluate",
         description = "Compile time evaluation lowering",
-        // TODO: Check if it's indeed correct.
         prerequisite = setOf(callableReferencePhase, defaultParameterExtentPhase)
 )
 
@@ -265,7 +264,7 @@ internal val varargPhase = makeKonanFileLoweringPhase(
         ::VarargInjectionLowering,
         name = "Vararg",
         description = "Vararg lowering",
-        prerequisite = setOf(compileTimeEvaluatePhase)
+        prerequisite = setOf(callableReferencePhase, defaultParameterExtentPhase, compileTimeEvaluatePhase)
 )
 
 internal val coroutinesPhase = makeKonanFileLoweringPhase(
