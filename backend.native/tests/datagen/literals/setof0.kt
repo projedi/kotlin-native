@@ -8,11 +8,16 @@ package datagen.literals.setof0
 import kotlin.test.*
 
 @Test fun runTest() {
-    val set = foo()
-    println(set === foo())
-    println(set.toString())
+    val x = foo1()
+    println(x === foo1())
+    println(x === foo2())
+    println(x.toString())
 }
 
-fun foo(): Set<String> {
+fun foo1(): Set<String> {
+    return setOf("a", "b", "c")
+}
+
+fun foo2(): Set<String> {
     return setOf("a", "b", "c")
 }

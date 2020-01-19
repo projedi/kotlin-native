@@ -469,21 +469,39 @@ internal class IntrinsicGenerator(private val environment: IntrinsicGeneratorEnv
         val keys = varargExpression.elements.map { IrConstKind.String.valueOf(it as IrConst<*>) }
         val resultingMap = IntrinsicHashMap<String, Unit>(keys, null) { it.cityHash64().toInt() }
 
-        var keysArray = ArrayList<ConstPointer>(resultingMap.keys.size)
-        for (key in resultingMap.keys) {
-            keysArray.add(context.llvm.staticData.kotlinStringLiteral(key))
+        val valueStrBuilder = StringBuilder("${resultingMap.length}[")
+        for (i in resultingMap.keys.indices) {
+            valueStrBuilder.append('"')
+            valueStrBuilder.append(resultingMap.keys[i])
+            valueStrBuilder.append("\",")
+        }
+        valueStrBuilder.append(']')
+        val valueStr = valueStrBuilder.toString()
+
+        val res = context.llvm.staticData.hashMapLiteral(valueStr) {
+            var keysArray = ArrayList<ConstPointer>(resultingMap.keys.size)
+            for (key in resultingMap.keys) {
+                keysArray.add(context.llvm.staticData.kotlinStringLiteral(key))
+            }
+
+            val hashMap = context.llvm.staticData.createConstHashMap(
+                    context.llvm.staticData.createConstKotlinArray(context.ir.symbols.array.owner, keysArray),
+                    null,
+                    context.llvm.staticData.createConstKotlinArray(context.ir.symbols.intArray.owner, resultingMap.presence.map { Int32(it) } ),
+                    context.llvm.staticData.createConstKotlinArray(context.ir.symbols.intArray.owner, resultingMap.hashes.map { Int32(it) } ),
+                    resultingMap.maxProbeDistance,
+                    resultingMap.length,
+                    resultingMap.hashShift)
+            val objRef = context.llvm.staticData.createConstHashSet(hashMap)
+
+            val name = "khashset:" + valueStr.globalHashBase64
+
+            val res = context.llvm.staticData.createAlias(name, objRef)
+            LLVMSetLinkage(res.llvm, LLVMLinkage.LLVMWeakAnyLinkage)
+            res
         }
 
-        val hashMap = context.llvm.staticData.createConstHashMap(
-                context.llvm.staticData.createConstKotlinArray(context.ir.symbols.array.owner, keysArray),
-                null,
-                context.llvm.staticData.createConstKotlinArray(context.ir.symbols.intArray.owner, resultingMap.presence.map { Int32(it) } ),
-                context.llvm.staticData.createConstKotlinArray(context.ir.symbols.intArray.owner, resultingMap.hashes.map { Int32(it) } ),
-                resultingMap.maxProbeDistance,
-                resultingMap.length,
-                resultingMap.hashShift)
-
-        return context.llvm.staticData.createConstHashSet(hashMap).llvm
+        return res.llvm
     }
 
     private fun FunctionGenerationContext.emitGetNativeNullPtr(): LLVMValueRef =

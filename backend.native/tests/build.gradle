@@ -2198,7 +2198,7 @@ task mapof0(type: KonanLocalTest) {
 }
 
 task setof0(type: KonanLocalTest) {
-    goldValue = "true\n[a, b, c]\n"
+    goldValue = "true\ntrue\n[a, b, c]\n"
     source = "datagen/literals/setof0.kt"
 }
 
