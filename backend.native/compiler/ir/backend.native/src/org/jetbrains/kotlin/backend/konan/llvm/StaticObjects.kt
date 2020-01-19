@@ -81,9 +81,7 @@ internal fun StaticData.createConstKotlinObject(type: IrClass, vararg fields: Co
 }
 
 internal fun StaticData.createConstKotlinObject(type: IrClass, fields: Map<String, ConstValue>): ConstPointer {
-    val typeFqName = type.fqNameForIrSerialization
-
-    // Now sort these values according to the order of fields returned by getFields()
+    // Sort these values according to the order of fields returned by getFields()
     // to match the sorting order of the real type.
     val sorted = linkedMapOf<String, ConstValue>()
     context.getLayoutBuilder(type).fields.forEach {
