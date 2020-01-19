@@ -80,6 +80,19 @@ internal fun StaticData.createConstKotlinObject(type: IrClass, vararg fields: Co
     return createRef(objHeaderPtr)
 }
 
+internal fun StaticData.createConstKotlinObject(type: IrClass, fields: Map<String, ConstValue>): ConstPointer {
+    val typeFqName = type.fqNameForIrSerialization
+
+    // Now sort these values according to the order of fields returned by getFields()
+    // to match the sorting order of the real type.
+    val sorted = linkedMapOf<String, ConstValue>()
+    context.getLayoutBuilder(type).fields.forEach {
+        sorted.put(it.fqNameForIrSerialization.asString(), fields[it.name.asString()]!!)
+    }
+
+    return createConstKotlinObject(type, *sorted.values.toTypedArray())
+}
+
 internal fun StaticData.createInitializer(type: IrClass, vararg fields: ConstValue): ConstValue =
         Struct(objHeader(type.typeInfoPtr), *fields)
 
@@ -90,24 +103,11 @@ internal fun StaticData.createInitializer(type: IrClass, vararg fields: ConstVal
  * @param length value for `length: Int` field.
  */
 internal fun StaticData.createConstArrayList(array: ConstPointer, length: Int): ConstPointer {
-    val arrayListClass = context.ir.symbols.arrayList.owner
-
-    val arrayListFqName = arrayListClass.fqNameForIrSerialization
-    val arrayListFields = mapOf(
-        "$arrayListFqName.array" to array,
-        "$arrayListFqName.offset" to Int32(0),
-        "$arrayListFqName.length" to Int32(length),
-        "$arrayListFqName.backing" to NullPointer(kObjHeader))
-
-    // Now sort these values according to the order of fields returned by getFields()
-    // to match the sorting order of the real ArrayList().
-    val sorted = linkedMapOf<String, ConstValue>()
-    context.getLayoutBuilder(arrayListClass).fields.forEach {
-        val fqName = it.fqNameForIrSerialization.asString()
-        sorted.put(fqName, arrayListFields[fqName]!!)
-    }
-
-    return createConstKotlinObject(arrayListClass, *sorted.values.toTypedArray())
+    return createConstKotlinObject(context.ir.symbols.arrayList.owner, mapOf(
+            "array" to array,
+            "offset" to Int32(0),
+            "length" to Int32(length),
+            "backing" to NullPointer(kObjHeader)))
 }
 
 internal fun StaticData.createConstHashMap(
@@ -118,49 +118,23 @@ internal fun StaticData.createConstHashMap(
         maxProbeDistance: Int,
         length: Int,
         hashShift: Int): ConstPointer {
-    val hashMapClass = context.ir.symbols.hashMap.owner
-
-    val hashMapFqName = hashMapClass.fqNameForIrSerialization
-    val hashMapFields = mapOf(
-        "$hashMapFqName.keysArray" to keysArray,
-        "$hashMapFqName.valuesArray" to (valuesArray ?: NullPointer(kObjHeader)),
-        "$hashMapFqName.presenceArray" to presenceArray,
-        "$hashMapFqName.hashArray" to hashArray,
-        "$hashMapFqName.maxProbeDistance" to Int32(maxProbeDistance),
-        "$hashMapFqName.length" to Int32(length),
-        "$hashMapFqName.hashShift" to Int32(hashShift),
-        "$hashMapFqName._size" to Int32(length),
-        "$hashMapFqName.keysView" to NullPointer(kObjHeader),
-        "$hashMapFqName.valuesView" to NullPointer(kObjHeader),
-        "$hashMapFqName.entriesView" to NullPointer(kObjHeader))
-
-    // Now sort these values according to the order of fields returned by getFields()
-    // to match the sorting order of the real HashMap().
-    val sorted = linkedMapOf<String, ConstValue>()
-    context.getLayoutBuilder(hashMapClass).fields.forEach {
-        val fqName = it.fqNameForIrSerialization.asString()
-        sorted.put(fqName, hashMapFields[fqName]!!)
-    }
-
-    return createConstKotlinObject(hashMapClass, *sorted.values.toTypedArray())
+    return createConstKotlinObject(context.ir.symbols.hashMap.owner, mapOf(
+        "keysArray" to keysArray,
+        "valuesArray" to (valuesArray ?: NullPointer(kObjHeader)),
+        "presenceArray" to presenceArray,
+        "hashArray" to hashArray,
+        "maxProbeDistance" to Int32(maxProbeDistance),
+        "length" to Int32(length),
+        "hashShift" to Int32(hashShift),
+        "_size" to Int32(length),
+        "keysView" to NullPointer(kObjHeader),
+        "valuesView" to NullPointer(kObjHeader),
+        "entriesView" to NullPointer(kObjHeader)))
 }
 
 internal fun StaticData.createConstHashSet(hashMap: ConstPointer): ConstPointer {
-    val hashSetClass = context.ir.symbols.hashSet.owner
-
-    val hashSetFqName = hashSetClass.fqNameForIrSerialization
-    val hashSetFields = mapOf(
-        "$hashSetFqName.backing" to hashMap)
-
-    // Now sort these values according to the order of fields returned by getFields()
-    // to match the sorting order of the real HashSet().
-    val sorted = linkedMapOf<String, ConstValue>()
-    context.getLayoutBuilder(hashSetClass).fields.forEach {
-        val fqName = it.fqNameForIrSerialization.asString()
-        sorted.put(fqName, hashSetFields[fqName]!!)
-    }
-
-    return createConstKotlinObject(hashSetClass, *sorted.values.toTypedArray())
+    return createConstKotlinObject(context.ir.symbols.hashSet.owner, mapOf(
+        "backing" to hashMap))
 }
 
 internal fun StaticData.createUniqueInstance(
