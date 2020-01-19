@@ -7,7 +7,7 @@ package kotlin.collections
 
 import kotlin.native.concurrent.isFrozen
 
-// NOTE: There's an internal reimplementation (IntrinsicHashMap) of this HashMap that must match this one.
+// NOTE: There's an internal reimplementation (StaticHashMap) of this HashMap that must match this one.
 actual class HashMap<K, V> private constructor(
         private var keysArray: Array<K>,
         private var valuesArray: Array<V>?, // allocated only when actually used, always null in pure HashSet

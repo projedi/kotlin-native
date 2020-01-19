@@ -166,10 +166,7 @@ internal class StaticData(override val context: Context): ContextUtils {
     fun kotlinStringLiteral(value: String) =
         stringLiterals.getOrPut(value) { createKotlinStringLiteral(value) }
 
-    private val hashMapLiterals = mutableMapOf<String, ConstPointer>()
-
-    fun hashMapLiteral(value: String, f: () -> ConstPointer) =
-            hashMapLiterals.getOrPut(value, f)
+    internal val hashMapLiterals = mutableMapOf<String, ConstPointer>()
 }
 
 /**
