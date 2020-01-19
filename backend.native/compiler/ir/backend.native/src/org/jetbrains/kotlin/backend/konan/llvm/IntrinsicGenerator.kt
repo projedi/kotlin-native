@@ -125,6 +125,7 @@ private fun getIntrinsicType(callSite: IrFunctionAccessExpression): IntrinsicTyp
     return IntrinsicType.valueOf(value)
 }
 
+// NOTE: Must match HashMap from runtime.
 private class IntrinsicHashMap<K, V> private constructor(
         private var hashFunction: (K) -> Int,
         private var keysArray: ArrayList<K>,
