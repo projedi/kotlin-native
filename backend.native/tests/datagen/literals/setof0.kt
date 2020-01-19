@@ -12,6 +12,10 @@ import kotlin.test.*
     println(x === foo1())
     println(x === foo2())
     println(x.toString())
+    println(x.contains("a"))
+    println(x.contains("b"))
+    println(x.contains("c"))
+    println(x.contains("d"))
 }
 
 fun foo1(): Set<String> {

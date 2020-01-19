@@ -12,6 +12,10 @@ import kotlin.test.*
     println(x === foo1())
     println(x === foo2())
     println(x.toString())
+    println(x["a"])
+    println(x["b"])
+    println(x["c"])
+    println(x["d"])
 }
 
 fun foo1(): Map<String, String> {

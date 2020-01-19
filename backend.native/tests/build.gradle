@@ -2193,12 +2193,12 @@ task inline_to(type: KonanLocalTest) {
 }
 
 task mapof0(type: KonanLocalTest) {
-    goldValue = "true\ntrue\n{a=x, b=y, c=z}\n"
+    goldValue = "true\ntrue\n{a=x, b=y, c=z}\nx\ny\nz\nnull\n"
     source = "datagen/literals/mapof0.kt"
 }
 
 task setof0(type: KonanLocalTest) {
-    goldValue = "true\ntrue\n[a, b, c]\n"
+    goldValue = "true\ntrue\n[a, b, c]\ntrue\ntrue\ntrue\nfalse\n"
     source = "datagen/literals/setof0.kt"
 }
 
