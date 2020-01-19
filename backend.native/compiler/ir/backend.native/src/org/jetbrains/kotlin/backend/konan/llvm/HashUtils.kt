@@ -51,3 +51,10 @@ public fun base64Decode(encoded: String): ByteArray {
 }
 
 internal class LocalHash(val value: Long) : ConstValue by Int64(value)
+
+public fun cityHash64(data: ByteArray): Long {
+    memScoped {
+        val bytes = allocArrayOf(data)
+        return CityHash64(bytes, data.size.toLong())
+    }
+}

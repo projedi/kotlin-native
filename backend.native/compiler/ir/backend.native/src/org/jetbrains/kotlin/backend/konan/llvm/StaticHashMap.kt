@@ -2,7 +2,6 @@ package org.jetbrains.kotlin.backend.konan.llvm
 
 import llvm.LLVMLinkage
 import llvm.LLVMSetLinkage
-import org.jetbrains.kotlin.backend.common.serialization.cityHash64
 
 // NOTE: Must match HashMap from runtime.
 private class StaticHashMap<K, V> private constructor(
@@ -123,8 +122,13 @@ private class StaticHashMap<K, V> private constructor(
 }
 
 internal fun StaticData.hashMapLiteral(keys: List<String>, values: List<String>): ConstPointer {
-    // NOTE: This presumes that String's hash function is cityHash64.
-    val resultingMap = StaticHashMap(keys, values) { it.cityHash64().toInt() }
+    // NOTE: This presumes that String is UTF16LE and it's hash function is cityHash64.
+    val resultingMap = StaticHashMap(keys, values) {
+        val res = cityHash64(it.toByteArray(Charsets.UTF_16LE))
+        val resInt = res.toInt()
+        println("hash of $it is $resInt (64 is $res)")
+        resInt
+    }
 
     val valueStrBuilder = StringBuilder("${resultingMap.length}{")
     for (i in resultingMap.keys.indices) {
@@ -164,8 +168,8 @@ internal fun StaticData.hashMapLiteral(keys: List<String>, values: List<String>)
 }
 
 internal fun StaticData.hashSetLiteral(keys: List<String>): ConstPointer {
-    // NOTE: This presumes that String's hash function is cityHash64.
-    val resultingMap = StaticHashMap<String, Unit>(keys, null) { it.cityHash64().toInt() }
+    // NOTE: This presumes that String is UTF16LE and it's hash function is cityHash64.
+    val resultingMap = StaticHashMap<String, Unit>(keys, null) { cityHash64(it.toByteArray(Charsets.UTF_16LE)).toInt() }
 
     val valueStrBuilder = StringBuilder("${resultingMap.length}[")
     for (i in resultingMap.keys.indices) {
