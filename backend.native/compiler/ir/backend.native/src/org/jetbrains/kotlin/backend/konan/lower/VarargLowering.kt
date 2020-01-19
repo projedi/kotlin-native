@@ -47,6 +47,7 @@ private fun skipCall(callSite: IrFunctionAccessExpression): Boolean {
     val annotationValue = annotation.getAnnotationStringValue()!!
 
     when (annotationValue) {
+        // These calls are treated specially and require varargs as an argument.
         "LIST_OF_INTERNAL",
         "MAP_OF_INTERNAL",
         "SET_OF_INTERNAL" -> return true
@@ -104,10 +105,10 @@ internal class VarargInjectionLowering constructor(val context: KonanBackendCont
             }
 
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
-                if (!skipCall(expression)) {
-                    replaceEmptyParameterWithEmptyArray(expression)
-                }
+                if (skipCall(expression))
+                  return expression
 
+                replaceEmptyParameterWithEmptyArray(expression)
                 return expression
             }
 
