@@ -4,7 +4,7 @@ import llvm.LLVMLinkage
 import llvm.LLVMSetLinkage
 
 // NOTE: Must match HashMap from runtime.
-private class StaticHashMap<K, V> private constructor(
+internal class StaticHashMap<K, V> private constructor(
         private var hashFunction: (K) -> Int,
         private var keysArray: ArrayList<K>,
         private var valuesArray: ArrayList<V>?, // allocated only when actually used, always null in pure HashSet
@@ -48,6 +48,50 @@ private class StaticHashMap<K, V> private constructor(
                 }
             }
         }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (other === this)
+            return true
+        if (other !is StaticHashMap<*, *>)
+            return false
+        if (length != other.length)
+            return false
+        if ((valuesArray == null) != (other.valuesArray == null))
+            return false
+        try {
+            return contentEquals(other as StaticHashMap<K, V>)
+        } catch (e: ClassCastException) {
+            return false
+        }
+    }
+
+    override fun hashCode(): Int {
+        if (valuesArray == null) {
+            return keysArray.map {k -> k.hashCode()}.sum()
+        }
+
+        var result = 0
+        for (i in keysArray.indices) {
+            result += keysArray[i].hashCode() xor valuesArray!![i].hashCode()
+        }
+
+        return result
+    }
+
+    private fun contentEquals(other: StaticHashMap<K, V>): Boolean {
+        for (i in keysArray.indices) {
+            val hash = presenceArray[i]
+            val j = other.hashArray[hash]
+            if (j <= 0) {
+                return false
+            }
+            if (keysArray[i] != other.keysArray[j - 1])
+                return false
+            if (valuesArray != null && (valuesArray!![i] != other.valuesArray!![j - 1]))
+                return false
+        }
+        return true
     }
 
     private val hashSize: Int get() = hashArray.size
@@ -123,25 +167,9 @@ private class StaticHashMap<K, V> private constructor(
 
 internal fun StaticData.hashMapLiteral(keys: List<String>, values: List<String>): ConstPointer {
     // NOTE: This presumes that String is UTF16LE and it's hash function is cityHash64.
-    val resultingMap = StaticHashMap(keys, values) {
-        val res = cityHash64(it.toByteArray(Charsets.UTF_16LE))
-        val resInt = res.toInt()
-        println("hash of $it is $resInt (64 is $res)")
-        resInt
-    }
+    val resultingMap = StaticHashMap(keys, values) { cityHash64(it.toByteArray(Charsets.UTF_16LE)).toInt() }
 
-    val valueStrBuilder = StringBuilder("${resultingMap.length}{")
-    for (i in resultingMap.keys.indices) {
-        valueStrBuilder.append('"')
-        valueStrBuilder.append(resultingMap.keys[i])
-        valueStrBuilder.append("\":\"")
-        valueStrBuilder.append(resultingMap.values!![i])
-        valueStrBuilder.append("\",")
-    }
-    valueStrBuilder.append('}')
-    val valueStr = valueStrBuilder.toString()
-
-    return hashMapLiterals.getOrPut(valueStr) {
+    return hashMapLiterals.getOrPut(resultingMap) {
         val keysArray = ArrayList<ConstPointer>(resultingMap.keys.size)
         for (key in resultingMap.keys) {
             keysArray.add(kotlinStringLiteral(key))
@@ -159,6 +187,17 @@ internal fun StaticData.hashMapLiteral(keys: List<String>, values: List<String>)
                 resultingMap.maxProbeDistance,
                 resultingMap.length,
                 resultingMap.hashShift)
+
+        val valueStrBuilder = StringBuilder("{")
+        for (i in resultingMap.keys.indices) {
+            valueStrBuilder.append('"')
+            valueStrBuilder.append(resultingMap.keys[i])
+            valueStrBuilder.append("\":\"")
+            valueStrBuilder.append(resultingMap.values!![i])
+            valueStrBuilder.append("\",")
+        }
+        valueStrBuilder.append('}')
+        val valueStr = valueStrBuilder.toString()
         val name = "khashmap:" + valueStr.globalHashBase64
 
         val res = createAlias(name, objRef)
@@ -171,16 +210,7 @@ internal fun StaticData.hashSetLiteral(keys: List<String>): ConstPointer {
     // NOTE: This presumes that String is UTF16LE and it's hash function is cityHash64.
     val resultingMap = StaticHashMap<String, Unit>(keys, null) { cityHash64(it.toByteArray(Charsets.UTF_16LE)).toInt() }
 
-    val valueStrBuilder = StringBuilder("${resultingMap.length}[")
-    for (i in resultingMap.keys.indices) {
-        valueStrBuilder.append('"')
-        valueStrBuilder.append(resultingMap.keys[i])
-        valueStrBuilder.append("\",")
-    }
-    valueStrBuilder.append(']')
-    val valueStr = valueStrBuilder.toString()
-
-    return hashMapLiterals.getOrPut(valueStr) {
+    return hashMapLiterals.getOrPut(resultingMap) {
         val keysArray = ArrayList<ConstPointer>(resultingMap.keys.size)
         for (key in resultingMap.keys) {
             keysArray.add(kotlinStringLiteral(key))
@@ -196,6 +226,14 @@ internal fun StaticData.hashSetLiteral(keys: List<String>): ConstPointer {
                 resultingMap.hashShift)
         val objRef = createConstHashSet(hashMap)
 
+        val valueStrBuilder = StringBuilder("[")
+        for (i in resultingMap.keys.indices) {
+            valueStrBuilder.append('"')
+            valueStrBuilder.append(resultingMap.keys[i])
+            valueStrBuilder.append("\",")
+        }
+        valueStrBuilder.append(']')
+        val valueStr = valueStrBuilder.toString()
         val name = "khashset:" + valueStr.globalHashBase64
 
         val res = createAlias(name, objRef)
